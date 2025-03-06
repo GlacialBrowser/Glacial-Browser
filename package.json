@@ -1,0 +1,56 @@
+{
+  "name": "glacial-browser",
+  "version": "1.0.0",
+  "description": "Navegador moderno com bloqueador de anúncios e design inovador",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "dist": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.alguemfps.glacialbrowser",
+    "productName": "Glacial Browser",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "**/*"
+    ],
+    "win": {
+      "target": "nsis", 
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false, 
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.icns"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "build/icon.png"
+    }
+  },
+  "dependencies": {
+    "@cliqz/adblocker-electron": "^1.26.7",
+    "cross-fetch": "^4.0.0",
+    "electron-context-menu": "^3.6.1"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^23.6.0"
+  },
+  "author": "alguemfps",
+  "license": "MIT",
+  "keywords": [
+    "browser",
+    "adblock",
+    "electron",
+    "modern"
+  ]
+}

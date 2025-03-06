@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Quantum Browser</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <div class="window-controls">
+        <button id="min-btn" class="window-control">─</button>
+        <button id="max-btn" class="window-control">□</button>
+        <button id="close-btn" class="window-control">×</button>
+      </div>
+      <div class="nav-bar">
+        <button id="back" class="nav-btn">←</button>
+        <button id="forward" class="nav-btn">→</button>
+        <button id="reload" class="nav-btn">↻</button>
+        <input id="url-bar" type="text" placeholder="Pesquisar ou digite um URL" />
+        <button id="settings" class="nav-btn">⚙</button>
+      </div>
+    </div>
+
+    <webview
+      id="webview"
+      src="https://www.google.com/webhp?igu=1"
+      allowpopups
+      webpreferences="nodeIntegration=no, contextIsolation=yes, javascript=yes, webSecurity=yes"
+      style="display: inline-flex; width: 100%; height: calc(100vh - 100px);"
+    ></webview>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

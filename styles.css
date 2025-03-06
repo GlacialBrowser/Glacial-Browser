@@ -1,0 +1,135 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  body {
+    background: #1a1a1a;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .header {
+    background: #2d2d2d;
+    padding: 10px;
+    -webkit-app-region: drag;
+    z-index: 1000;
+    position: relative;
+  }
+  
+  .window-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+  
+  .window-control {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+    transition: all 0.3s;
+  }
+  
+  .window-control:hover {
+    color: #00ff9d;
+  }
+  
+  .nav-bar {
+    display: flex;
+    gap: 8px;
+    -webkit-app-region: no-drag;
+    align-items: center;
+  }
+  
+  .nav-btn {
+    background: #3d3d3d;
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .nav-btn,
+  #settings {
+    -webkit-app-region: no-drag;
+  }
+  
+  .nav-btn:hover {
+    background: #00ff9d;
+    color: #000;
+  }
+  
+  #url-bar {
+    flex: 1;
+    border: none;
+    border-radius: 20px;
+    background: #3d3d3d;
+    color: white;
+    outline: none;
+    -webkit-app-region: no-drag;
+    cursor: text;
+    padding: 12px 20px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+  
+  #url-bar:focus {
+    background: #ffffff15;
+    box-shadow: 0 0 15px #00ff9d33;
+  }
+  
+  #webview {
+    flex: 1;
+    border: none;
+    z-index: 999;
+    position: fixed;
+    top: 100px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(100vh - 100px);
+    transition: opacity 0.3s;
+  }
+  
+
+  .loading {
+    background: linear-gradient(90deg, #3d3d3d, #4d4d4d, #3d3d3d) !important;
+    background-size: 200% 100% !important;
+    animation: loading 1.5s infinite !important;
+  }
+  
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+  
+  #webview.loading {
+    opacity: 0.8;
+  }
+  
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% {
+      transform: rotate(0);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
