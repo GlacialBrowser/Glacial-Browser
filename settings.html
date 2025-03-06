@@ -3,21 +3,90 @@
   <head>
     <meta charset="UTF-8" />
     <title>Configurações</title>
+    <style>
+      body {
+        background: #222;
+        color: #fff;
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 10px;
+      }
+      input[type="text"],
+      input[type="color"],
+      select {
+        width: 100%;
+        padding: 5px;
+        margin-top: 5px;
+        border-radius: 3px;
+        border: 1px solid #555;
+      }
+      .config-group {
+        margin-top: 15px;
+      }
+    </style>
   </head>
-  <body style="background: #222; color: #fff; font-family: sans-serif; padding: 20px;">
+  <body>
     <h1>Configurações</h1>
 
-    <div style="margin-bottom: 10px;">
+    <div>
       <label>
         <input type="checkbox" id="adblock-checkbox" />
         Ativar Adblock
       </label>
     </div>
 
-    <div style="margin-bottom: 10px;">
+    <div>
       <label>
         <input type="checkbox" id="skipads-checkbox" />
         Pular anúncios automaticamente no YouTube
+      </label>
+    </div>
+
+    <div class="config-group">
+      <label>
+        <input type="checkbox" id="malicious-warning-checkbox" />
+        Avisar site malicioso
+      </label>
+    </div>
+
+    <div class="config-group">
+      <label>
+        <input type="checkbox" id="rename-tab-checkbox" />
+        Exibir botão para renomear abas
+      </label>
+    </div>
+
+    <div class="config-group">
+      <label>
+        <input type="checkbox" id="vpn-checkbox" />
+        Ativar VPN (mascara o IP)
+      </label>
+    </div>
+
+    <div class="config-group">
+      <label>
+        Background da Homepage (Cor):
+        <input type="color" id="background-input" value="#1a1a1a" />
+      </label>
+    </div>
+
+    <div class="config-group">
+      <label>
+        Background da Homepage (Imagem URL):
+        <input type="text" id="background-image-input" placeholder="URL da imagem" />
+      </label>
+    </div>
+
+    <div class="config-group">
+      <label>
+        Tema:
+        <select id="theme-select">
+          <option value="light">Claro</option>
+          <option value="dark">Escuro</option>
+        </select>
       </label>
     </div>
 

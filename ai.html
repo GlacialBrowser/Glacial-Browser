@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Chat IA - Glacial Browser</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+      .chat-container {
+         max-width: 800px;
+         margin: 0 auto;
+         padding: 20px;
+         background: rgba(255, 255, 255, 0.1);
+         border-radius: 10px;
+         height: 80vh;
+         overflow-y: auto;
+      }
+      .chat-input {
+         width: 100%;
+         padding: 10px;
+         border: none;
+         border-radius: 5px;
+         font-size: 16px;
+         margin-top: 10px;
+      }
+      .send-button {
+         padding: 10px 20px;
+         margin-top: 10px;
+         border: none;
+         border-radius: 5px;
+         background: #00ff9d;
+         color: #000;
+         font-size: 16px;
+         cursor: pointer;
+      }
+      .message {
+         margin-bottom: 10px;
+         padding: 10px;
+         border-radius: 5px;
+      }
+      .message.user {
+         background: #3d3d3d;
+         text-align: right;
+      }
+      .message.ai {
+         background: #555;
+         text-align: left;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container" id="chat-container"></div>
+    <input type="text" id="chat-input" class="chat-input" placeholder="Digite sua mensagem..."/>
+    <button id="send-button" class="send-button">Enviar</button>
+    <script src="ai.js"></script>
+  </body>
+</html>

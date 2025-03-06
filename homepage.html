@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Início - Glacial Browser</title>
+    <base href="./">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+      .homepage {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        color: #fff;
+      }
+      .search-container {
+        display: flex;
+        margin-bottom: 20px;
+      }
+      .search-container input {
+        width: 400px;
+        padding: 10px;
+        border-radius: 7px 0 0 7px;
+        background: rgba(255, 255, 255, 0.884); 
+        border: none;
+        outline: none;
+        font-size: 16px;
+      }
+      .search-container button {
+        padding: 10px;
+        border-radius: 0 7px 7px 0;
+        border: none;
+        cursor: pointer;
+        background: rgba(0, 255, 157, 0.7);
+        color: #2c2c2c;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .search-container button svg {
+        width: 20px;
+        height: 20px;
+      }
+      .homepage-buttons button {
+        margin: 5px;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        background: #3d3d3de0;
+        color: #fff;
+        transition: background 0.3s;
+      }
+      .homepage-buttons button:hover {
+        background: #00ff9d;
+        color: #000;
+      }
+      .favorites-container {
+        margin-top: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+      }
+      .favorite-item {
+        display: flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 5px;
+        padding: 8px 12px;
+      }
+      .favorite-link {
+        text-decoration: none;
+        color: #333;
+        font-size: 14px;
+      }
+      .favorite-home-star {
+        margin-left: 8px;
+        cursor: pointer;
+      }
+      .favorite-home-star svg {
+        width: 16px;
+        height: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="homepage" id="homepage">
+      <div class="search-container">
+        <input type="text" id="homepage-search" placeholder="Pesquisar ou digite um URL">
+        <button id="homepage-search-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="homepage-buttons">
+        <button id="notifications-btn">Notificações</button>
+        <button id="translate-btn">Traduzir</button>
+        <button id="ai-btn">IA</button>
+      </div>
+      <div id="favorites-container" class="favorites-container"></div>
+    </div>
+    <script>
+      document.getElementById('homepage-search-btn').addEventListener('click', () => {
+        const query = document.getElementById('homepage-search').value;
+        if (query) {
+          window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        }
+      });
+      document.getElementById('notifications-btn').addEventListener('click', () => {
+        window.api.openNotifications();
+      });
+      document.getElementById('translate-btn').addEventListener('click', () => {
+        window.api.openTranslator();
+      });
+      document.getElementById('ai-btn').addEventListener('click', () => {
+        window.api.openAITab();
+      });
+      function getFavorites() {
+        return JSON.parse(localStorage.getItem('favorites') || '[]');
+      }
+      function updateHomepageFavorites() {
+        const container = document.getElementById('favorites-container');
+        container.innerHTML = '';
+        let favorites = getFavorites();
+        favorites.forEach(fav => {
+          const favItem = document.createElement('div');
+          favItem.className = 'favorite-item';
+          
+          const favLink = document.createElement('a');
+          favLink.href = fav.url;
+          favLink.innerText = fav.title;
+          favLink.className = 'favorite-link';
+          
+          const starIcon = document.createElement('span');
+          starIcon.className = 'favorite-home-star';
+          starIcon.innerHTML = `
+            <svg viewBox="0 0 24 24" stroke="currentColor" fill="currentColor">
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+            </svg>`;
+          starIcon.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Remove favorito ao clicar na estrela da homepage
+            let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+            const index = favorites.findIndex(favObj => favObj.id === fav.id);
+            if (index !== -1) {
+              favorites.splice(index, 1);
+              localStorage.setItem('favorites', JSON.stringify(favorites));
+              updateHomepageFavorites();
+            }
+          });
+          
+          favItem.appendChild(favLink);
+          favItem.appendChild(starIcon);
+          container.appendChild(favItem);
+        });
+      }
+      document.addEventListener('DOMContentLoaded', updateHomepageFavorites);
+      window.api.getThemeSettings().then(settings => {
+        const homepage = document.getElementById('homepage');
+        if (settings.homepageBackgroundImage) {
+          let imageUrl = settings.homepageBackgroundImage;
+          if (!imageUrl.startsWith('http://') && 
+              !imageUrl.startsWith('https://') && 
+              !imageUrl.startsWith('file://')) {
+            imageUrl = `./${imageUrl}`;
+          }
+          homepage.style.background = `url(${imageUrl}) center/cover no-repeat`;
+        } else {
+          homepage.style.background = settings.homepageBackground;
+        }
+        if (settings.theme === "light") {
+          document.body.classList.add("light-theme");
+        } else {
+          document.body.classList.add("dark-theme");
+        }
+      });
+    </script>
+  </body>
+</html>

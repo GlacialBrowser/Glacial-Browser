@@ -1,150 +1,274 @@
-const webview = document.getElementById('webview');
-const urlBar = document.getElementById('url-bar');
-let autoSkipAds = false;
+let tabs = [];
+let currentTabId = null;
+let closedTabs = [];
+const defaultSearchEngine = "https://www.google.com/search?q=";
+
+function getFavorites() {
+  return JSON.parse(localStorage.getItem('favorites') || '[]');
+}
+function saveFavorites(favorites) {
+  localStorage.setItem('favorites', JSON.stringify(favorites));
+}
+function updateFavoriteIcon(tabId) {
+  const tab = tabs.find(t => t.id === tabId);
+  if (tab) {
+    const favoriteElement = tab.button.querySelector('.favorite-tab');
+    let favorites = getFavorites();
+    if (favorites.find(fav => fav.id === tabId)) {
+      favoriteElement.classList.add('favorited');
+      favoriteElement.querySelector('.star-icon').setAttribute('fill', 'currentColor');
+    } else {
+      favoriteElement.classList.remove('favorited');
+      favoriteElement.querySelector('.star-icon').removeAttribute('fill');
+    }
+  }
+}
+function toggleFavorite(tabId, title, url, favoriteElement) {
+  let favorites = getFavorites();
+  const index = favorites.findIndex(fav => fav.id === tabId);
+  if (index === -1) {
+    favorites.push({ id: tabId, title: title, url: url });
+  } else {
+    favorites.splice(index, 1);
+  }
+  saveFavorites(favorites);
+  updateFavoriteIcon(tabId);
+  if(window.updateHomepageFavorites) window.updateHomepageFavorites();
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   setupWindowControls();
-  setupNavigation();
-  setupWebview();
-  setupUrlBar();
+  setupNavBarButtons();
+  setupTabBar();
+  window.api.getSavedTabs().then(state => {
+    if (state.tabs && state.tabs.length > 0) {
+      state.tabs.forEach(tabState => {
+        createNewTab(tabState.url, tabState.id);
+      });
+      if (state.currentTabId) {
+        switchTab(state.currentTabId);
+      } else {
+        switchTab(state.tabs[0].id);
+      }
+    } else {
+      createNewTab();
+    }
+  });
+  document.getElementById('incognito-btn')?.addEventListener('click', () => {
+    window.api.openIncognito();
+  });
+  document.getElementById('reopen-tab-btn')?.addEventListener('click', () => {
+    if (closedTabs.length > 0) {
+      const lastClosed = closedTabs.pop();
+      createNewTab(lastClosed.url);
+    }
+  });
 });
 
-
 function setupWindowControls() {
-  document.getElementById('min-btn').addEventListener('click', () => {
+  document.getElementById('min-btn')?.addEventListener('click', () => {
     window.api.windowControl('minimize');
   });
-  document.getElementById('max-btn').addEventListener('click', () => {
+  document.getElementById('max-btn')?.addEventListener('click', () => {
     window.api.windowControl('maximize');
   });
-  document.getElementById('close-btn').addEventListener('click', () => {
+  document.getElementById('close-btn')?.addEventListener('click', () => {
     window.api.windowControl('close');
   });
-  document.getElementById('settings').addEventListener('click', () => {
+  document.getElementById('settings')?.addEventListener('click', () => {
     window.api.openSettings();
   });
-}
-
-
-function setupNavigation() {
-  const updateNavButtons = () => {
-    document.getElementById('back').disabled = !webview.canGoBack();
-    document.getElementById('forward').disabled = !webview.canGoForward();
-  };
-
-  webview.addEventListener('did-navigate', updateNavButtons);
-  webview.addEventListener('did-navigate-in-page', updateNavButtons);
-
-  document.getElementById('back').addEventListener('click', () => webview.goBack());
-  document.getElementById('forward').addEventListener('click', () => webview.goForward());
-  document.getElementById('reload').addEventListener('click', () => {
-    webview.reload();
-    urlBar.classList.add('loading');
+  document.getElementById('back')?.addEventListener('click', () => {
+    const webview = getCurrentWebview();
+    if (webview && webview.canGoBack()) webview.goBack();
+  });
+  document.getElementById('forward')?.addEventListener('click', () => {
+    const webview = getCurrentWebview();
+    if (webview && webview.canGoForward()) webview.goForward();
+  });
+  document.getElementById('reload')?.addEventListener('click', () => {
+    const webview = getCurrentWebview();
+    if (webview) {
+      webview.reload();
+      document.getElementById('url-bar').classList.add('loading');
+    }
+  });
+  document.getElementById('url-bar')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const newUrl = normalizeUrl(document.getElementById('url-bar').value);
+      const webview = getCurrentWebview();
+      if (webview) webview.loadURL(newUrl);
+    }
   });
 }
 
+function setupNavBarButtons() {
+  document.getElementById('google-home-btn')?.addEventListener('click', () => {
+    const webview = getCurrentWebview();
+    if (webview) {
+      webview.loadURL('https://www.google.com');
+    }
+  });
+  document.getElementById('login-btn')?.addEventListener('click', () => {
+    if (window.api && window.api.openGoogleLogin) {
+      window.api.openGoogleLogin();
+    }
+  });
+}
 
-function setupWebview() {
-  const modernUserAgent =
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
-  webview.setAttribute('useragent', modernUserAgent);
+function setupTabBar() {
+  const newTabBtn = document.getElementById('new-tab-btn');
+  newTabBtn?.addEventListener('click', () => {
+    createNewTab();
+  });
+}
 
+function createNewTab(url = 'homepage.html', providedTabId = null) {
+  const tabId = providedTabId || 'tab-' + Date.now();
+  const webviewContainer = document.getElementById('webview-container');
+  const tabBar = document.getElementById('tab-bar');
+
+  const tabButton = document.createElement('div');
+  tabButton.className = 'tab-btn';
+  tabButton.id = 'btn-' + tabId;
+  tabButton.style['-webkit-app-region'] = 'no-drag';
+
+  const titleSpan = document.createElement('span');
+  titleSpan.className = 'tab-title';
+  titleSpan.innerText = 'Nova Aba';
+
+  const favoriteIcon = document.createElement('span');
+  favoriteIcon.className = 'favorite-tab';
+  favoriteIcon.setAttribute('data-tabid', tabId);
+  favoriteIcon.title = 'Favoritar';
+  favoriteIcon.innerHTML = `
+    <svg class="star-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none">
+      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+    </svg>`;
+
+  const closeIcon = document.createElement('span');
+  closeIcon.className = 'close-tab';
+  closeIcon.setAttribute('data-tabid', tabId);
+  closeIcon.innerText = 'x';
+
+  tabButton.appendChild(titleSpan);
+  tabButton.appendChild(favoriteIcon);
+  tabButton.appendChild(closeIcon);
+
+  tabButton.addEventListener('click', (e) => {
+    if (e.target.classList.contains('close-tab')) {
+      closeTab(tabId);
+      e.stopPropagation();
+      return;
+    }
+    if (e.target.closest('.favorite-tab')) {
+      toggleFavorite(tabId, titleSpan.innerText, url, favoriteIcon);
+      e.stopPropagation();
+      return;
+    }
+    switchTab(tabId);
+  });
+  tabBar.insertBefore(tabButton, document.getElementById('new-tab-btn'));
+
+  const webview = document.createElement('webview');
+  webview.id = tabId;
+  webview.src = url;
+  webview.setAttribute('preload', 'preload.js');
+  webview.setAttribute('webpreferences', 'nodeIntegration=no, contextIsolation=yes, javascript=yes, webSecurity=yes');
+  webview.style.width = '100%';
+  webview.style.height = '100%';
+  webview.style.display = 'none';
+
+  // Permite o menu de contexto padrão (para inspecionar, copiar, etc.)
+  webview.addEventListener('contextmenu', (e) => {
+    // Não previne o comportamento padrão
+  });
+
+  webview.addEventListener('new-window', (e) => {
+    createNewTab(e.url);
+  });
+  webview.addEventListener('did-navigate', async (e) => {
+    if (tabId === currentTabId) {
+      document.getElementById('url-bar').value = e.url;
+    }
+    const warningEnabled = await window.api.getMaliciousWarning();
+    if (warningEnabled && e.url.includes("malicious.com")) {
+       alert("Aviso: Este site pode ser malicioso!");
+    }
+  });
+  const tabData = { id: tabId, customName: null };
+  webview.addEventListener('page-title-updated', (e) => {
+    if (!tabData.customName) {
+      titleSpan.innerText = e.title;
+    }
+  });
   webview.addEventListener('did-start-loading', () => {
-    urlBar.classList.add('loading');
+    document.getElementById('url-bar').classList.add('loading');
     document.getElementById('reload').classList.add('spin');
   });
-
   webview.addEventListener('did-stop-loading', () => {
-    urlBar.classList.remove('loading');
+    document.getElementById('url-bar').classList.remove('loading');
     document.getElementById('reload').classList.remove('spin');
-  });
-
-  webview.addEventListener('did-navigate', (e) => {
-    urlBar.value = e.url;
-  });
-
-  webview.addEventListener('did-fail-load', (e) => {
-    console.error('Erro de carregamento:', e);
-    if (!e.validatedURL.includes('google.com')) {
-      webview.src = `https://downforeveryoneorjustme.com/${encodeURIComponent(e.validatedURL)}`;
+    if (tabId === currentTabId) {
+      document.getElementById('url-bar').value = webview.getURL();
     }
   });
 
- 
-  webview.addEventListener('dom-ready', async () => {
-    await webview.executeJavaScript(`
-      delete navigator.__proto__.webdriver;
-      Object.defineProperty(navigator, 'userAgent', {
-        value: '${modernUserAgent}',
-        configurable: false,
-        writable: false
-      });
-    `);
-
-   
-    const currentUrl = webview.getURL();
-    if (autoSkipAds && currentUrl.includes('youtube.com')) {
-      injectAdSkipScript();
-    }
-  });
-
-
-  webview.addEventListener('will-navigate', (event) => {
-    if (event.url.includes('accounts.google.com')) {
-      event.preventDefault();
-      window.api.openExternal(event.url);
-    }
-  });
-
-
-  webview.addEventListener('new-window', (event) => {
-    if (event.url.includes('accounts.google.com')) {
-      event.preventDefault();
-      window.api.openExternal(event.url);
-    } else {
-  
-      webview.loadURL(event.url);
-    }
-  });
-
- 
-  window.api.receive('toggle-auto-skip', (event, enable) => {
-    autoSkipAds = enable;
-    const currentUrl = webview.getURL();
-    if (autoSkipAds && currentUrl.includes('youtube.com')) {
-      injectAdSkipScript();
-    }
-  });
+  webviewContainer.appendChild(webview);
+  tabs.push({ id: tabId, button: tabButton, webview: webview, data: tabData });
+  updateFavoriteIcon(tabId);
+  switchTab(tabId);
+  updateTabsState();
 }
 
+function switchTab(tabId) {
+  tabs.forEach(tab => {
+    tab.webview.style.display = 'none';
+    tab.button.classList.remove('active-tab');
+  });
+  const tab = tabs.find(t => t.id === tabId);
+  if (tab) {
+    tab.webview.style.display = 'flex';
+    tab.button.classList.add('active-tab');
+    currentTabId = tabId;
+    document.getElementById('url-bar').value = tab.webview.getURL();
+  }
+  updateTabsState();
+}
 
-function injectAdSkipScript() {
-  webview.executeJavaScript(`
-    console.log('Injetando script para pular anúncios no YouTube...');
-    setInterval(() => {
-      const skipBtn = document.querySelector('.ytp-ad-skip-button');
-      if (skipBtn) {
-        skipBtn.click();
+function closeTab(tabId) {
+  const tabIndex = tabs.findIndex(t => t.id === tabId);
+  if (tabIndex > -1) {
+    const tab = tabs[tabIndex];
+    tab.button.remove();
+    tab.webview.remove();
+    closedTabs.push({ url: tab.webview.src });
+    tabs.splice(tabIndex, 1);
+    if (currentTabId === tabId) {
+      if (tabs.length > 0) {
+        switchTab(tabs[0].id);
+      } else {
+        currentTabId = null;
+        document.getElementById('url-bar').value = "";
       }
-    }, 1000);
-  `);
-}
-
-
-function setupUrlBar() {
-  urlBar.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const newUrl = normalizeUrl(urlBar.value);
-      webview.src = newUrl;
     }
-  });
-  urlBar.addEventListener('click', () => urlBar.select());
+    updateTabsState();
+  }
 }
 
+function getCurrentWebview() {
+  const tab = tabs.find(t => t.id === currentTabId);
+  return tab ? tab.webview : null;
+}
 
 function normalizeUrl(input) {
-  const url = input.trim().toLowerCase();
-  if (/^(?:https?|ftp):\/\//i.test(url)) return url;
+  const url = input.trim();
+  if (/^(https?:\/\/)/i.test(url)) return url;
   if (/^[a-z0-9-]+(\.[a-z]{2,})+$/i.test(url)) return `https://${url}`;
-  return `https://www.google.com/search?q=${encodeURIComponent(input)}`;
+  return defaultSearchEngine + encodeURIComponent(url);
+}
+
+function updateTabsState() {
+  const tabsState = tabs.map(tab => ({ id: tab.id, url: tab.webview.src }));
+  window.api.updateTabs(tabsState, currentTabId);
 }
